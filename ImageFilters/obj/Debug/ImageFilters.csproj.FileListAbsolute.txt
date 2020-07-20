@@ -1,0 +1,15 @@
+C:\Users\Rodzice\source\repos\rekrutacja\ImageFilters\ImageFilters\bin\Debug\ImageFilters.exe.config
+C:\Users\Rodzice\source\repos\rekrutacja\ImageFilters\ImageFilters\bin\Debug\ImageFilters.exe
+C:\Users\Rodzice\source\repos\rekrutacja\ImageFilters\ImageFilters\bin\Debug\ImageFilters.pdb
+C:\Users\Rodzice\source\repos\rekrutacja\ImageFilters\ImageFilters\obj\Debug\ImageFilters.csprojAssemblyReference.cache
+C:\Users\Rodzice\source\repos\rekrutacja\ImageFilters\ImageFilters\obj\Debug\MainWindow.g.cs
+C:\Users\Rodzice\source\repos\rekrutacja\ImageFilters\ImageFilters\obj\Debug\App.g.cs
+C:\Users\Rodzice\source\repos\rekrutacja\ImageFilters\ImageFilters\obj\Debug\ImageFilters_MarkupCompile.cache
+C:\Users\Rodzice\source\repos\rekrutacja\ImageFilters\ImageFilters\obj\Debug\ImageFilters_MarkupCompile.lref
+C:\Users\Rodzice\source\repos\rekrutacja\ImageFilters\ImageFilters\obj\Debug\MainWindow.baml
+C:\Users\Rodzice\source\repos\rekrutacja\ImageFilters\ImageFilters\obj\Debug\ImageFilters.g.resources
+C:\Users\Rodzice\source\repos\rekrutacja\ImageFilters\ImageFilters\obj\Debug\ImageFilters.Properties.Resources.resources
+C:\Users\Rodzice\source\repos\rekrutacja\ImageFilters\ImageFilters\obj\Debug\ImageFilters.csproj.GenerateResource.cache
+C:\Users\Rodzice\source\repos\rekrutacja\ImageFilters\ImageFilters\obj\Debug\ImageFilters.csproj.CoreCompileInputs.cache
+C:\Users\Rodzice\source\repos\rekrutacja\ImageFilters\ImageFilters\obj\Debug\ImageFilters.exe
+C:\Users\Rodzice\source\repos\rekrutacja\ImageFilters\ImageFilters\obj\Debug\ImageFilters.pdb
