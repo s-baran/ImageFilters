@@ -1,0 +1,451 @@
+[33mcommit 50d2694521e3e1edf62f4c8fbc5fecbf8359f38c[m[33m ([m[1;36mHEAD -> [m[1;32mmaster[m[33m)[m
+Author: Szymon <szbaran12@gmail.com>
+Date:   Tue Jul 21 00:20:30 2020 +0200
+
+    Added image import and try to edit pixels
+
+[1mdiff --git a/.vs/ImageFilters/v16/.suo b/.vs/ImageFilters/v16/.suo[m
+[1mnew file mode 100644[m
+[1mindex 0000000..e05219b[m
+Binary files /dev/null and b/.vs/ImageFilters/v16/.suo differ
+[1mdiff --git a/ImageFilters/BradleyThresholding.cs b/ImageFilters/BradleyThresholding.cs[m
+[1mnew file mode 100644[m
+[1mindex 0000000..28b7d39[m
+[1m--- /dev/null[m
+[1m+++ b/ImageFilters/BradleyThresholding.cs[m
+[36m@@ -0,0 +1,120 @@[m
+[32m+[m[32m﻿using System;[m
+[32m+[m[32musing System.Collections.Generic;[m
+[32m+[m[32musing System.Drawing;[m
+[32m+[m[32musing System.IO;[m
+[32m+[m[32musing System.Linq;[m
+[32m+[m[32musing System.Text;[m
+[32m+[m[32musing System.Threading.Tasks;[m
+[32m+[m[32musing System.Windows.Media;[m
+[32m+[m[32musing System.Windows.Media.Imaging;[m
+[32m+[m
+[32m+[m[32mnamespace ImageFilters[m
+[32m+[m[32m{[m
+[32m+[m[32m    public class BradleyThresholding[m
+[32m+[m[32m    {[m
+[32m+[m[32m        private Dictionary<PixelFormat, PixelFormat> formatTranslations = new Dictionary<PixelFormat, PixelFormat>();[m
+[32m+[m
+[32m+[m[32m        private int windowSize = 41;[m
+[32m+[m[32m        private float pixelBrightnessDifferenceLimit = 0.15f;[m
+[32m+[m
+[32m+[m[32m        private void CheckSourceFormat(PixelFormat pixelFormat)[m
+[32m+[m[32m        {[m
+[32m+[m[32m            if (!formatTranslations.ContainsKey(pixelFormat))[m
+[32m+[m[32m                throw new UnsupportedImageFormatException("Source pixel format is not supported by the filter.");[m
+[32m+[m[32m        }[m
+[32m+[m
+[32m+[m[32m        public int WindowSize[m
+[32m+[m[32m        {[m
+[32m+[m[32m            get { return windowSize; }[m
+[32m+[m[32m            set { windowSize = Math.Max(3, value | 1); }[m
+[32m+[m[32m        }[m
+[32m+[m
+[32m+[m[32m        public void ApplyInPlace(ref BitmapImage image)[m
+[32m+[m[32m        {[m
+[32m+[m[32m            //lock source bitmap data[m
+[32m+[m[32m            WriteableBitmap data = new WriteableBitmap(image);[m
+[32m+[m
+[32m+[m[32m            FormatConvertedBitmap converter = new FormatConvertedBitmap();[m
+[32m+[m
+[32m+[m[32m            converter.BeginInit();[m
+[32m+[m[32m            converter.Source = data;[m
+[32m+[m[32m            converter.DestinationFormat = PixelFormats.Indexed8;[m
+[32m+[m[32m            converter.DestinationPalette = BitmapPalettes.Halftone256;[m
+[32m+[m[32m            converter.EndInit();[m
+[32m+[m
+[32m+[m[41m             [m
+[32m+[m[32m            ProcessFilter(ref data);[m
+[32m+[m[32m            image = ConvertWriteableBitmapToBitmapImage(data);[m
+[32m+[m
+[32m+[m[32m        }[m
+[32m+[m[32m        public BitmapImage ConvertWriteableBitmapToBitmapImage(WriteableBitmap wbm)[m
+[32m+[m[32m        {[m
+[32m+[m[32m            BitmapImage bmImage = new BitmapImage();[m
+[32m+[m[32m            using (MemoryStream stream = new MemoryStream())[m
+[32m+[m[32m            {[m
+[32m+[m[32m                PngBitmapEncoder encoder = new PngBitmapEncoder();[m
+[32m+[m[32m                encoder.Frames.Add(BitmapFrame.Create(wbm));[m
+[32m+[m[32m                encoder.Save(stream);[m
+[32m+[m[32m                bmImage.BeginInit();[m
+[32m+[m[32m                bmImage.CacheOption = BitmapCacheOption.OnLoad;[m
+[32m+[m[32m                bmImage.StreamSource = stream;[m
+[32m+[m[32m                bmImage.EndInit();[m
+[32m+[m[32m                bmImage.Freeze();[m
+[32m+[m[32m            }[m
+[32m+[m[32m            return bmImage;[m
+[32m+[m[32m        }[m
+[32m+[m
+[32m+[m[32m        protected unsafe void ProcessFilter(ref WriteableBitmap image)[m
+[32m+[m[32m        {[m
+[32m+[m[32m            image.Lock();[m
+[32m+[m[32m            // create integral image[m
+[32m+[m[32m            IntegralImage im = IntegralImage.FromBitmap(image);[m
+[32m+[m
+[32m+[m[32m            int width = image.PixelWidth;[m
+[32m+[m[32m            int height = image.PixelHeight;[m
+[32m+[m[32m            int widthM1 = width - 1;[m
+[32m+[m[32m            int heightM1 = height - 1;[m
+[32m+[m
+[32m+[m[32m            int offset = image.BackBufferStride - width;[m
+[32m+[m[32m            int radius = windowSize / 2;[m
+[32m+[m
+[32m+[m[32m            float avgBrightnessPart = 1.0f - pixelBrightnessDifferenceLimit;[m
+[32m+[m
+[32m+[m[32m            byte* ptr = (byte*)image.BackBuffer;[m
+[32m+[m
+[32m+[m[32m            for (int y = 0; y < height; y++)[m
+[32m+[m[32m            {[m
+[32m+[m[32m                // rectangle's Y coordinates[m
+[32m+[m[32m                int y1 = y - radius;[m
+[32m+[m[32m                int y2 = y + radius;[m
+[32m+[m
+[32m+[m[32m                if (y1 < 0)[m
+[32m+[m[32m                    y1 = 0;[m
+[32m+[m[32m                if (y2 > heightM1)[m
+[32m+[m[32m                    y2 = heightM1;[m
+[32m+[m
+[32m+[m[32m                for (int x = 0; x < width; x++, ptr++)[m
+[32m+[m[32m                {[m
+[32m+[m[32m                    // rectangle's X coordinates[m
+[32m+[m[32m                    int x1 = x - radius;[m
+[32m+[m[32m                    int x2 = x + radius;[m
+[32m+[m
+[32m+[m[32m                    if (x1 < 0)[m
+[32m+[m[32m                        x1 = 0;[m
+[32m+[m[32m                    if (x2 > widthM1)[m
+[32m+[m[32m                        x2 = widthM1;[m
+[32m+[m
+[32m+[m[32m                    *ptr = (byte)((*ptr < (int)(im.GetRectangleMeanUnsafe(x1, y1, x2, y2) * avgBrightnessPart)) ? 0 : 255);[m
+[32m+[m[32m                }[m
+[32m+[m
+[32m+[m[32m                ptr += offset;[m
+[32m+[m[32m            }[m
+[32m+[m[32m            image.Unlock();[m
+[32m+[m[32m        }[m
+[32m+[m[32m            public BradleyThresholding()[m
+[32m+[m[32m        {[m
+[32m+[m[41m            [m
+[32m+[m[32m        }[m
+[32m+[m
+[32m+[m[32m    }[m
+[32m+[m[32m}[m
+[1mdiff --git a/ImageFilters/Exceptions.cs b/ImageFilters/Exceptions.cs[m
+[1mnew file mode 100644[m
+[1mindex 0000000..db53cd0[m
+[1m--- /dev/null[m
+[1m+++ b/ImageFilters/Exceptions.cs[m
+[36m@@ -0,0 +1,38 @@[m
+[32m+[m[32m﻿using System;[m
+[32m+[m[32musing System.Collections.Generic;[m
+[32m+[m[32musing System.Linq;[m
+[32m+[m[32musing System.Text;[m
+[32m+[m[32musing System.Threading.Tasks;[m
+[32m+[m
+[32m+[m[32mnamespace ImageFilters[m
+[32m+[m[32m{[m
+[32m+[m[32m    public class UnsupportedImageFormatException : ArgumentException[m
+[32m+[m[32m    {[m
+[32m+[m[32m        /// <summary>[m
+[32m+[m[32m        /// Initializes a new instance of the <see cref="UnsupportedImageFormatException"/> class.[m
+[32m+[m[32m        /// </summary>[m
+[32m+[m[32m        public UnsupportedImageFormatException() { }[m
+[32m+[m
+[32m+[m[32m        /// <summary>[m
+[32m+[m[32m        /// Initializes a new instance of the <see cref="UnsupportedImageFormatException"/> class.[m
+[32m+[m[32m        /// </summary>[m
+[32m+[m[32m        ///[m[41m [m
+[32m+[m[32m        /// <param name="message">Message providing some additional information.</param>[m
+[32m+[m[32m        ///[m[41m [m
+[32m+[m[32m        public UnsupportedImageFormatException(string message) :[m
+[32m+[m[32m            base(message)[m
+[32m+[m[32m        { }[m
+[32m+[m
+[32m+[m[32m        /// <summary>[m
+[32m+[m[32m        /// Initializes a new instance of the <see cref="UnsupportedImageFormatException"/> class.[m
+[32m+[m[32m        /// </summary>[m
+[32m+[m[32m        ///[m[41m [m
+[32m+[m[32m        /// <param name="message">Message providing some additional information.</param>[m
+[32m+[m[32m        /// <param name="paramName">Name of the invalid parameter.</param>[m
+[32m+[m[32m        ///[m[41m [m
+[32m+[m[32m        public UnsupportedImageFormatException(string message, string paramName) :[m
+[32m+[m[32m            base(message, paramName)[m
+[32m+[m[32m        { }[m
+[32m+[m[32m    }[m
+[32m+[m[41m     [m
+[32m+[m[32m}[m
+[1mdiff --git a/ImageFilters/ImageFilters.csproj b/ImageFilters/ImageFilters.csproj[m
+[1mindex 369ff3d..fa105d4 100644[m
+[1m--- a/ImageFilters/ImageFilters.csproj[m
+[1m+++ b/ImageFilters/ImageFilters.csproj[m
+[36m@@ -24,6 +24,7 @@[m
+     <DefineConstants>DEBUG;TRACE</DefineConstants>[m
+     <ErrorReport>prompt</ErrorReport>[m
+     <WarningLevel>4</WarningLevel>[m
+[32m+[m[32m    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>[m
+   </PropertyGroup>[m
+   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">[m
+     <PlatformTarget>AnyCPU</PlatformTarget>[m
+[36m@@ -33,10 +34,12 @@[m
+     <DefineConstants>TRACE</DefineConstants>[m
+     <ErrorReport>prompt</ErrorReport>[m
+     <WarningLevel>4</WarningLevel>[m
+[32m+[m[32m    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>[m
+   </PropertyGroup>[m
+   <ItemGroup>[m
+     <Reference Include="System" />[m
+     <Reference Include="System.Data" />[m
+[32m+[m[32m    <Reference Include="System.Drawing" />[m
+     <Reference Include="System.Xml" />[m
+     <Reference Include="Microsoft.CSharp" />[m
+     <Reference Include="System.Core" />[m
+[36m@@ -55,6 +58,7 @@[m
+       <Generator>MSBuild:Compile</Generator>[m
+       <SubType>Designer</SubType>[m
+     </ApplicationDefinition>[m
+[32m+[m[32m    <Compile Include="UnmanagedImage.cs" />[m
+     <Page Include="MainWindow.xaml">[m
+       <Generator>MSBuild:Compile</Generator>[m
+       <SubType>Designer</SubType>[m
+[36m@@ -63,6 +67,9 @@[m
+       <DependentUpon>App.xaml</DependentUpon>[m
+       <SubType>Code</SubType>[m
+     </Compile>[m
+[32m+[m[32m    <Compile Include="BradleyThresholding.cs" />[m
+[32m+[m[32m    <Compile Include="Exceptions.cs" />[m
+[32m+[m[32m    <Compile Include="IntegralImage.cs" />[m
+     <Compile Include="MainWindow.xaml.cs">[m
+       <DependentUpon>MainWindow.xaml</DependentUpon>[m
+       <SubType>Code</SubType>[m
+[1mdiff --git a/ImageFilters/IntegralImage.cs b/ImageFilters/IntegralImage.cs[m
+[1mnew file mode 100644[m
+[1mindex 0000000..63ebb4d[m
+[1m--- /dev/null[m
+[1m+++ b/ImageFilters/IntegralImage.cs[m
+[36m@@ -0,0 +1,77 @@[m
+[32m+[m[32m﻿using System;[m
+[32m+[m[32musing System.Drawing;[m[41m [m
+[32m+[m[32musing System.Windows.Media.Imaging;[m
+[32m+[m
+[32m+[m[32mnamespace ImageFilters[m
+[32m+[m[32m{[m
+[32m+[m[32m    public class IntegralImage[m
+[32m+[m[32m    {[m
+[32m+[m[32m        protected uint[,] integralImage = null;[m
+[32m+[m[32m        private int width;[m
+[32m+[m[32m        private int height;[m
+[32m+[m
+[32m+[m[32m        public IntegralImage(int width, int height)[m
+[32m+[m[32m        {[m
+[32m+[m[32m            this.width = width;[m
+[32m+[m[32m            this.height = height;[m
+[32m+[m[32m            integralImage = new uint[height + 1, width + 1];[m
+[32m+[m[32m        }[m
+[32m+[m[32m        public int Width[m
+[32m+[m[32m        {[m
+[32m+[m[32m            get { return width; }[m
+[32m+[m[32m        }[m
+[32m+[m[32m        public int Height[m
+[32m+[m[32m        {[m
+[32m+[m[32m            get { return height; }[m
+[32m+[m[32m        }[m
+[32m+[m[41m         [m
+[32m+[m[32m        public static IntegralImage FromBitmap(WriteableBitmap image)[m
+[32m+[m[32m        {[m
+[32m+[m[32m            image.Lock();[m
+[32m+[m
+[32m+[m[32m            // get source image size[m
+[32m+[m[32m            int width = image.PixelWidth;[m
+[32m+[m[32m            int height = image.PixelHeight;[m
+[32m+[m[32m            int offset = image.BackBufferStride - width;[m
+[32m+[m
+[32m+[m[32m            // create integral image[m
+[32m+[m[32m            IntegralImage im = new IntegralImage(width, height);[m
+[32m+[m[32m            uint[,] integralImage = im.integralImage;[m
+[32m+[m
+[32m+[m[32m            // do the job[m
+[32m+[m[32m            unsafe[m
+[32m+[m[32m            {[m
+[32m+[m[32m                byte* src = (byte*)image.BackBuffer;[m
+[32m+[m
+[32m+[m[32m                // for each line[m
+[32m+[m[32m                for (int y = 1; y <= height; y++)[m
+[32m+[m[32m                {[m
+[32m+[m[32m                    uint rowSum = 0;[m
+[32m+[m
+[32m+[m[32m                    // for each pixel[m
+[32m+[m[32m                    for (int x = 1; x <= width; x++, src++)[m
+[32m+[m[32m                    {[m
+[32m+[m[32m                        rowSum += *src;[m
+[32m+[m
+[32m+[m[32m                        integralImage[y, x] = rowSum + integralImage[y - 1, x];[m
+[32m+[m[32m                    }[m
+[32m+[m[32m                    src += offset;[m
+[32m+[m[32m                }[m
+[32m+[m[32m            }[m
+[32m+[m
+[32m+[m[32m            image.Unlock();[m
+[32m+[m[32m            return im;[m
+[32m+[m[32m        }[m
+[32m+[m
+[32m+[m[32m        public float GetRectangleMeanUnsafe(int x1, int y1, int x2, int y2)[m
+[32m+[m[32m        {[m
+[32m+[m[32m            x2++;[m
+[32m+[m[32m            y2++;[m
+[32m+[m
+[32m+[m[32m            // return sum divided by actual rectangles size[m
+[32m+[m[32m            return (float)((double)(integralImage[y2, x2] + integralImage[y1, x1] - integralImage[y2, x1] - integralImage[y1, x2]) /[m
+[32m+[m[32m                (double)((x2 - x1) * (y2 - y1)));[m
+[32m+[m[32m        }[m
+[32m+[m[32m    }[m
+[32m+[m[32m}[m
+[32m+[m
+[1mdiff --git a/ImageFilters/MainWindow.xaml b/ImageFilters/MainWindow.xaml[m
+[1mindex 84cbe7b..8707721 100644[m
+[1m--- a/ImageFilters/MainWindow.xaml[m
+[1m+++ b/ImageFilters/MainWindow.xaml[m
+[36m@@ -5,8 +5,17 @@[m
+         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"[m
+         xmlns:local="clr-namespace:ImageFilters"[m
+         mc:Ignorable="d"[m
+[31m-        Title="MainWindow" Height="450" Width="800">[m
+[32m+[m[32m        Title="MainWindow" Height="600" Width="800">[m
+     <Grid>[m
+[31m-        [m
+[32m+[m[32m        <Grid.ColumnDefinitions>[m
+[32m+[m[32m            <ColumnDefinition Width="80*"/>[m
+[32m+[m[32m            <ColumnDefinition Width="20*"/>[m
+[32m+[m[32m        </Grid.ColumnDefinitions>[m
+[32m+[m[32m        <Image x:Name="ImageViewer" Grid.Column="0" HorizontalAlignment="Left" Height="Auto" Margin="10,10,0,0" VerticalAlignment="Top" Width="Auto"/>[m
+[32m+[m[32m        <StackPanel  Grid.Column="1" >[m
+[32m+[m[32m            <Button Content="Wyszukaj"  VerticalAlignment="Bottom"  Width="75" Click="BrowseButton_Click"/>[m
+[32m+[m[32m            <Label x:Name="FileNameLabel" Content="asd"  />[m
+[32m+[m[32m            <Button Content="Bradley" Click="BradleyButton_Click" Width="75"/>[m
+[32m+[m[32m        </StackPanel>[m
+     </Grid>[m
+ </Window>[m
+[1mdiff --git a/ImageFilters/MainWindow.xaml.cs b/ImageFilters/MainWindow.xaml.cs[m
+[1mindex 5cea7f6..d8a9c3c 100644[m
+[1m--- a/ImageFilters/MainWindow.xaml.cs[m
+[1m+++ b/ImageFilters/MainWindow.xaml.cs[m
+[36m@@ -1,6 +1,9 @@[m
+[31m-﻿using System;[m
+[32m+[m[32m﻿using Microsoft.Win32;[m
+[32m+[m[32musing System;[m
+ using System.Collections.Generic;[m
+[32m+[m[32musing System.IO;[m
+ using System.Linq;[m
+[32m+[m[32musing System.Security;[m
+ using System.Text;[m
+ using System.Threading.Tasks;[m
+ using System.Windows;[m
+[36m@@ -24,5 +27,36 @@[m [mnamespace ImageFilters[m
+         {[m
+             InitializeComponent();[m
+         }[m
+[32m+[m
+[32m+[m[32m        private void BrowseButton_Click(object sender, RoutedEventArgs e)[m
+[32m+[m[32m        {[m
+[32m+[m[32m            OpenFileDialog dlg = new OpenFileDialog();[m
+[32m+[m[32m            dlg.InitialDirectory = "c:\\";[m
+[32m+[m[32m            dlg.Filter = "Image files (*.jpg)|*.jpg|All Files (*.*)|*.*";[m
+[32m+[m[32m            dlg.RestoreDirectory = true;[m
+[32m+[m[41m            [m
+[32m+[m[32m            if (dlg.ShowDialog() == true)[m
+[32m+[m[32m            {[m
+[32m+[m[32m                string selectedFileName = dlg.FileName;[m
+[32m+[m[32m                FileNameLabel.Content = selectedFileName;[m
+[32m+[m[32m                BitmapImage bitmap = new BitmapImage();[m
+[32m+[m[32m                bitmap.BeginInit();[m
+[32m+[m[32m                bitmap.UriSource = new Uri(selectedFileName);[m
+[32m+[m[32m                bitmap.CreateOptions = BitmapCreateOptions.PreservePixelFormat;[m
+[32m+[m[32m                bitmap.EndInit();[m
+[32m+[m[32m                ImageViewer.Source = bitmap;[m
+[32m+[m[32m            }[m
+[32m+[m[32m        }[m
+[32m+[m
+[32m+[m[32m        private void BradleyButton_Click(object sender, RoutedEventArgs e)[m
+[32m+[m[32m        {[m
+[32m+[m[32m            BradleyThresholding filter = new BradleyThresholding();[m
+[32m+[m[32m            BitmapImage image = new BitmapImage();[m
+[32m+[m[32m            image.BeginInit();[m
+[32m+[m[32m            image.UriSource = new Uri(FileNameLabel.Content.ToString());[m
+[32m+[m[32m            image.EndInit();[m
+[32m+[m[32m            filter.ApplyInPlace(ref image);[m
+[32m+[m[32m            ImageViewer.Source = image;[m
+[32m+[m[32m        }[m
+     }[m
+ }[m
+[1mdiff --git a/ImageFilters/UnmanagedImage.cs b/ImageFilters/UnmanagedImage.cs[m
+[1mnew file mode 100644[m
+[1mindex 0000000..ca9a040[m
+[1m--- /dev/null[m
+[1m+++ b/ImageFilters/UnmanagedImage.cs[m
+[36m@@ -0,0 +1,83 @@[m
+[32m+[m[32m﻿using System;[m
+[32m+[m[32musing System.Collections.Generic;[m[41m [m
+[32m+[m[32musing System.Linq;[m
+[32m+[m[32musing System.Text;[m
+[32m+[m[32musing System.Threading.Tasks;[m
+[32m+[m[32musing System.Windows.Media;[m
+[32m+[m[32musing System.Windows.Media.Imaging;[m
+[32m+[m
+[32m+[m[32mnamespace ImageFilters[m
+[32m+[m[32m{[m
+[32m+[m[32m    public class UnmanagedImage : IDisposable[m
+[32m+[m[32m    {[m
+[32m+[m[32m        private IntPtr imageData;[m
+[32m+[m[32m        // image size[m
+[32m+[m[32m        private int width, height;[m
+[32m+[m[32m        // image stride (line size)[m
+[32m+[m[32m        private int stride;[m
+[32m+[m[32m        // image pixel format[m
+[32m+[m[32m        private PixelFormat pixelFormat;[m[41m  [m
+[32m+[m[32m        // flag which indicates if the image should be disposed or not[m
+[32m+[m[32m        private bool mustBeDisposed = false;[m
+[32m+[m
+[32m+[m[32m        public IntPtr ImageData[m
+[32m+[m[32m        {[m
+[32m+[m[32m            get { return imageData; }[m
+[32m+[m[32m        }[m
+[32m+[m[32m        public int Width[m
+[32m+[m[32m        {[m
+[32m+[m[32m            get { return width; }[m
+[32m+[m[32m        }[m
+[32m+[m
+[32m+[m[41m      [m
+[32m+[m[32m        public int Height[m
+[32m+[m[32m        {[m
+[32m+[m[32m            get { return height; }[m
+[32m+[m[32m        }[m
+[32m+[m
+[32m+[m[41m       [m
+[32m+[m[32m        public int Stride[m
+[32m+[m[32m        {[m
+[32m+[m[32m            get { return stride; }[m
+[32m+[m[32m        }[m
+[32m+[m
+[32m+[m[32m        public PixelFormat PixelFormat[m
+[32m+[m[32m        {[m
+[32m+[m[32m            get { return pixelFormat; }[m
+[32m+[m[32m        }[m
+[32m+[m[32m        public UnmanagedImage(WriteableBitmap bitmapData)[m
+[32m+[m[32m        {[m
+[32m+[m[32m            this.imageData = bitmapData.BackBuffer;[m
+[32m+[m[32m            this.width = bitmapData.PixelWidth;[m
+[32m+[m[32m            this.height = bitmapData.PixelHeight;[m
+[32m+[m[32m            this.stride = bitmapData.BackBufferStride;[m
+[32m+[m[32m            this.pixelFormat = bitmapData.Format;[m
+[32m+[m[32m        }[m
+[32m+[m
+[32m+[m[32m        ~UnmanagedImage()[m
+[32m+[m[32m        {[m
+[32m+[m[32m            Dispose(false);[m
+[32m+[m[32m        }[m
+[32m+[m
+[32m+[m[32m        public void Dispose()[m
+[32m+[m[32m     

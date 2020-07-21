@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ImageFilters"
         mc:Ignorable="d"
-        Title="MainWindow" Height="600" Width="800">
+        Title="ImageFilters" Height="600" Width="800">
     <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="80*"/>
@@ -13,9 +13,19 @@
         </Grid.ColumnDefinitions>
         <Image x:Name="ImageViewer" Grid.Column="0" HorizontalAlignment="Left" Height="Auto" Margin="10,10,0,0" VerticalAlignment="Top" Width="Auto"/>
         <StackPanel  Grid.Column="1" >
+            <Label x:Name="FileNameLabel" Content="Ścieżka do pliku:"  />
             <Button Content="Wyszukaj"  VerticalAlignment="Bottom"  Width="75" Click="BrowseButton_Click"/>
-            <Label x:Name="FileNameLabel" Content="asd"  />
-            <Button Content="Bradley" Click="BradleyButton_Click" Width="75"/>
+            <DockPanel>
+                <Label Content="Threshold" VerticalAlignment="Center"/>
+                <TextBox HorizontalAlignment="Right" Margin="5" VerticalAlignment="Center" Text="{Binding Value, ElementName=ThresholdSlider, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+            </DockPanel> 
+            <Slider x:Name="ThresholdSlider" Minimum="0" Maximum="100" Value="15" IsSnapToTickEnabled="True" TickFrequency="0.1"/>
+            <DockPanel>
+                <Label Content="Size" VerticalAlignment="Center"/>
+                <TextBox HorizontalAlignment="Right" Margin="5" VerticalAlignment="Center" Text="{Binding Value, ElementName=SizeSlider, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+            </DockPanel>
+            <Slider x:Name="SizeSlider" Minimum="0" Maximum="100" Value="15" IsSnapToTickEnabled="True" TickFrequency="1"/>
+            <Button x:Name="BradleyButton" Content="Bradley" Click="BradleyButton_Click" Width="75"/>
         </StackPanel>
     </Grid>
 </Window>

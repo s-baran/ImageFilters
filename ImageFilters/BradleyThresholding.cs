@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -12,27 +11,26 @@ namespace ImageFilters
 {
     public class BradleyThresholding
     {
-        private Dictionary<PixelFormat, PixelFormat> formatTranslations = new Dictionary<PixelFormat, PixelFormat>();
-
         private int windowSize = 41;
         private float pixelBrightnessDifferenceLimit = 0.15f;
-
-        private void CheckSourceFormat(PixelFormat pixelFormat)
-        {
-            if (!formatTranslations.ContainsKey(pixelFormat))
-                throw new UnsupportedImageFormatException("Source pixel format is not supported by the filter.");
-        }
-
+        
         public int WindowSize
         {
             get { return windowSize; }
             set { windowSize = Math.Max(3, value | 1); }
         }
 
+        public float PixelBrightnessDifferenceLimit 
+        { 
+            get => pixelBrightnessDifferenceLimit; 
+            set => pixelBrightnessDifferenceLimit = value; 
+        }
+
         public void ApplyInPlace(ref BitmapImage image)
         {
-            //lock source bitmap data
+            
             WriteableBitmap data = new WriteableBitmap(image);
+            
 
             FormatConvertedBitmap converter = new FormatConvertedBitmap();
 
@@ -42,11 +40,11 @@ namespace ImageFilters
             converter.DestinationPalette = BitmapPalettes.Halftone256;
             converter.EndInit();
 
-             
-            ProcessFilter(ref data);
-            image = ConvertWriteableBitmapToBitmapImage(data);
-
+            WriteableBitmap newData = new WriteableBitmap(converter);
+            ProcessFilter(newData);
+            image = ConvertWriteableBitmapToBitmapImage(newData);
         }
+
         public BitmapImage ConvertWriteableBitmapToBitmapImage(WriteableBitmap wbm)
         {
             BitmapImage bmImage = new BitmapImage();
@@ -64,10 +62,9 @@ namespace ImageFilters
             return bmImage;
         }
 
-        protected unsafe void ProcessFilter(ref WriteableBitmap image)
+        protected unsafe void ProcessFilter(WriteableBitmap image)
         {
-            image.Lock();
-            // create integral image
+            //create integral image
             IntegralImage im = IntegralImage.FromBitmap(image);
 
             int width = image.PixelWidth;
@@ -78,10 +75,11 @@ namespace ImageFilters
             int offset = image.BackBufferStride - width;
             int radius = windowSize / 2;
 
-            float avgBrightnessPart = 1.0f - pixelBrightnessDifferenceLimit;
+            float avgBrightnessPart = 1.0f - PixelBrightnessDifferenceLimit;
 
             byte* ptr = (byte*)image.BackBuffer;
 
+            image.Lock();
             for (int y = 0; y < height; y++)
             {
                 // rectangle's Y coordinates
@@ -111,9 +109,10 @@ namespace ImageFilters
             }
             image.Unlock();
         }
-            public BradleyThresholding()
+            public BradleyThresholding(double threshold, double size)
         {
-            
+            this.pixelBrightnessDifferenceLimit = (float)threshold/100;
+            this.windowSize = (int)size;
         }
 
     }
