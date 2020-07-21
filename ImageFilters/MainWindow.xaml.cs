@@ -27,8 +27,10 @@ namespace ImageFilters
         {
             InitializeComponent();
             BradleyButton.IsEnabled = false;
+            SaveButton.IsEnabled = false;
         }
-
+        private BitmapImage originalImage;
+        private BitmapImage processedImage;
         private void BrowseButton_Click(object sender, RoutedEventArgs e)
         {
             OpenFileDialog dlg = new OpenFileDialog();
@@ -40,15 +42,16 @@ namespace ImageFilters
             {
                 string selectedFileName = dlg.FileName;
                 FileNameLabel.Content = selectedFileName;
-                BitmapImage bitmap = new BitmapImage();
-                bitmap.BeginInit();
-                bitmap.UriSource = new Uri(selectedFileName);
-                bitmap.CreateOptions = BitmapCreateOptions.PreservePixelFormat | BitmapCreateOptions.IgnoreImageCache;
-                bitmap.EndInit();
+                originalImage = new BitmapImage();
+                originalImage.BeginInit();
+                originalImage.UriSource = new Uri(selectedFileName);
+                originalImage.CreateOptions = BitmapCreateOptions.PreservePixelFormat | BitmapCreateOptions.IgnoreImageCache;
+                originalImage.EndInit();
 
-                
-                ImageViewer.Source = bitmap;
+
+                ImageViewer.Source = originalImage;
                 BradleyButton.IsEnabled = true;
+                SaveButton.IsEnabled = true;
             }
         }
 
@@ -69,13 +72,31 @@ namespace ImageFilters
         private void BradleyButton_Click(object sender, RoutedEventArgs e)
         {
             BradleyThresholding filter = new BradleyThresholding(ThresholdSlider.Value, SizeSlider.Value);
-            BitmapImage image = new BitmapImage();
-            image.BeginInit();
-            image.UriSource = new Uri(FileNameLabel.Content.ToString());
-            
-            image.EndInit();
-            filter.ApplyInPlace(ref image);
-            ImageViewer.Source = image;
+            processedImage = new BitmapImage();
+            processedImage = originalImage.Clone();
+            filter.ApplyInPlace(ref processedImage);
+            ImageViewer.Source = processedImage;
+        }
+
+        private void SaveButton_Click(object sender, RoutedEventArgs e)
+        {
+            SaveFileDialog saveDialog = new SaveFileDialog();
+            saveDialog.Filter = "PNG (*.png)|*.png|JPEG (*.jpg;*.jpeg;*jpe;*jfif)|*.jpg;*.jpeg;*jpe;*jfif|Bitmap (*.bmp)|*.bmp|TIFF (*.tiff;*.tif)|*.tiff;*.tif";
+
+            if (saveDialog.ShowDialog() == true)
+            {
+                using (FileStream stream = new FileStream(saveDialog.FileName, FileMode.Create))
+                {
+                    PngBitmapEncoder encoder = new PngBitmapEncoder();
+                    encoder.Frames.Add(BitmapFrame.Create(processedImage));
+                    encoder.Save(stream);
+                }
+            }
+        }
+
+        private void ClearButton_Click(object sender, RoutedEventArgs e)
+        {
+            ImageViewer.Source = originalImage;
         }
     }
 }

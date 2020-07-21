@@ -68,7 +68,6 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="BradleyThresholding.cs" />
-    <Compile Include="Exceptions.cs" />
     <Compile Include="IntegralImage.cs" />
     <Compile Include="MainWindow.xaml.cs">
       <DependentUpon>MainWindow.xaml</DependentUpon>

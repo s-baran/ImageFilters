@@ -14,18 +14,22 @@
         <Image x:Name="ImageViewer" Grid.Column="0" HorizontalAlignment="Left" Height="Auto" Margin="10,10,0,0" VerticalAlignment="Top" Width="Auto"/>
         <StackPanel  Grid.Column="1" >
             <Label x:Name="FileNameLabel" Content="Ścieżka do pliku:"  />
-            <Button Content="Wyszukaj"  VerticalAlignment="Bottom"  Width="75" Click="BrowseButton_Click"/>
+            <Button Content="Wyszukaj" Margin="5" VerticalAlignment="Bottom"  Width="75" Click="BrowseButton_Click"/>
             <DockPanel>
                 <Label Content="Threshold" VerticalAlignment="Center"/>
                 <TextBox HorizontalAlignment="Right" Margin="5" VerticalAlignment="Center" Text="{Binding Value, ElementName=ThresholdSlider, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
-            </DockPanel> 
+            </DockPanel>
             <Slider x:Name="ThresholdSlider" Minimum="0" Maximum="100" Value="15" IsSnapToTickEnabled="True" TickFrequency="0.1"/>
             <DockPanel>
                 <Label Content="Size" VerticalAlignment="Center"/>
                 <TextBox HorizontalAlignment="Right" Margin="5" VerticalAlignment="Center" Text="{Binding Value, ElementName=SizeSlider, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
             </DockPanel>
             <Slider x:Name="SizeSlider" Minimum="0" Maximum="100" Value="15" IsSnapToTickEnabled="True" TickFrequency="1"/>
-            <Button x:Name="BradleyButton" Content="Bradley" Click="BradleyButton_Click" Width="75"/>
+            <Button x:Name="BradleyButton" Margin="5" Content="Bradley" Click="BradleyButton_Click" Width="75"/>
+            <DockPanel>
+                <Button x:Name="ClearButton" Margin="5" Content="Clear" Width="65" Click="ClearButton_Click"/>
+                <Button x:Name="SaveButton" HorizontalAlignment="Right" Margin="5" Content="Save" Width="65" Click="SaveButton_Click"/>
+            </DockPanel>
         </StackPanel>
     </Grid>
 </Window>
