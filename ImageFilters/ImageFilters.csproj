@@ -58,7 +58,8 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
-    <Compile Include="UnmanagedImage.cs" />
+    <Compile Include="BlurFilters\Blur.cs" />
+    <Compile Include="BlurFilters\Kernel.cs" />
     <Page Include="MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
@@ -67,8 +68,8 @@
       <DependentUpon>App.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="BradleyThresholding.cs" />
-    <Compile Include="IntegralImage.cs" />
+    <Compile Include="Thresholding\BradleyThresholding.cs" />
+    <Compile Include="Thresholding\IntegralImage.cs" />
     <Compile Include="MainWindow.xaml.cs">
       <DependentUpon>MainWindow.xaml</DependentUpon>
       <SubType>Code</SubType>

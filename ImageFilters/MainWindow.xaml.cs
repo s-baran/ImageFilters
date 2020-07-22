@@ -1,20 +1,10 @@
-﻿using Microsoft.Win32;
+﻿using ImageFilters.BlurFilters;
+using ImageFilters.Thresholding;
+using Microsoft.Win32;
 using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Security;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
 
 namespace ImageFilters
 {
@@ -26,8 +16,7 @@ namespace ImageFilters
         public MainWindow()
         {
             InitializeComponent();
-            BradleyButton.IsEnabled = false;
-            SaveButton.IsEnabled = false;
+            ControlsDisabling();
         }
         private BitmapImage originalImage;
         private BitmapImage processedImage;
@@ -41,7 +30,7 @@ namespace ImageFilters
             if (dlg.ShowDialog() == true)
             {
                 string selectedFileName = dlg.FileName;
-                FileNameLabel.Content = selectedFileName;
+                FileName.Content = selectedFileName;
                 originalImage = new BitmapImage();
                 originalImage.BeginInit();
                 originalImage.UriSource = new Uri(selectedFileName);
@@ -50,8 +39,7 @@ namespace ImageFilters
 
 
                 ImageViewer.Source = originalImage;
-                BradleyButton.IsEnabled = true;
-                SaveButton.IsEnabled = true;
+                ControlsEnabling();
             }
         }
 
@@ -91,12 +79,42 @@ namespace ImageFilters
                     encoder.Frames.Add(BitmapFrame.Create(processedImage));
                     encoder.Save(stream);
                 }
-            }
+            }  
         }
 
         private void ClearButton_Click(object sender, RoutedEventArgs e)
-        {
+        { 
             ImageViewer.Source = originalImage;
+        }
+
+        private void BlurButton_Click(object sender, RoutedEventArgs e)
+        {
+            Blur blurFilter = new Blur((int)BlurSizeSlider.Value);
+
+            processedImage = blurFilter.Apply(originalImage);
+            ImageViewer.Source = processedImage;
+        }
+
+        private void GaussBlurButton_Click(object sender, RoutedEventArgs e)
+        {
+            Blur gaussianBlurFilter = new Blur((int)SigmaSlider.Value,(int)BlurSizeSlider.Value);
+
+            gaussianBlurFilter.Apply(originalImage);
+        }
+
+        private void ControlsEnabling()
+        {
+            BradleyButton.IsEnabled = true;
+            SaveButton.IsEnabled = true;
+            GaussBlurButton.IsEnabled = true;
+            BlurButton.IsEnabled = true;
+        }
+        private void ControlsDisabling()
+        {
+            BradleyButton.IsEnabled = false;
+            SaveButton.IsEnabled = false;
+            GaussBlurButton.IsEnabled = false;
+            BlurButton.IsEnabled = false;
         }
     }
 }

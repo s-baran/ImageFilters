@@ -1,8 +1,6 @@
-﻿using System;
-using System.Drawing; 
-using System.Windows.Media.Imaging;
+﻿using System.Windows.Media.Imaging;
 
-namespace ImageFilters
+namespace ImageFilters.Thresholding
 {
     public class IntegralImage
     {

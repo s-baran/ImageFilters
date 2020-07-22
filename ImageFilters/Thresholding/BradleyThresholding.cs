@@ -1,13 +1,9 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
-namespace ImageFilters
+namespace ImageFilters.Thresholding
 {
     public class BradleyThresholding
     {
@@ -45,7 +41,7 @@ namespace ImageFilters
             image = ConvertWriteableBitmapToBitmapImage(newData);
         }
 
-        public BitmapImage ConvertWriteableBitmapToBitmapImage(WriteableBitmap wbm)
+        public static BitmapImage ConvertWriteableBitmapToBitmapImage(WriteableBitmap wbm)
         {
             BitmapImage bmImage = new BitmapImage();
             using (MemoryStream stream = new MemoryStream())
