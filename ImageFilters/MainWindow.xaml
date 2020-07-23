@@ -11,11 +11,14 @@
             <ColumnDefinition Width="70*"/>
             <ColumnDefinition Width="30*"/>
         </Grid.ColumnDefinitions>
-        <Image x:Name="ImageViewer" Grid.Column="0" HorizontalAlignment="Left" Height="Auto" Margin="10,10,0,0" VerticalAlignment="Top" Width="Auto"/>
+        <DockPanel Grid.Column="0">
+            <Image DockPanel.Dock="Top" x:Name="ImageViewer" HorizontalAlignment="Left" Height="Auto" Margin="10,10,0,0" VerticalAlignment="Top" Width="Auto"/>
+        </DockPanel>
         <StackPanel Background="AliceBlue" Margin="5" Grid.Column="1" >
             <Label x:Name="FileName" Width="Auto" Height="Auto" Content="Ścieżka do pliku:"  />
-            <Button Content="Wyszukaj" Margin="5" VerticalAlignment="Bottom"  Width="75" Click="BrowseButton_Click"/>
+            <Button  Margin="5" VerticalAlignment="Bottom"  Width="75" Click="BrowseButton_Click">Wyszukaj</Button>
             <Separator/>
+            <Label Content="Thresholding:"/>
             <DockPanel>
                 <Label Content="Threshold" VerticalAlignment="Center"/>
                 <TextBox HorizontalAlignment="Right" Margin="5" VerticalAlignment="Center" Text="{Binding Value, ElementName=ThresholdSlider, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
@@ -26,25 +29,33 @@
                 <TextBox HorizontalAlignment="Right" Margin="5" VerticalAlignment="Center" Text="{Binding Value, ElementName=SizeSlider, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
             </DockPanel>
             <Slider x:Name="SizeSlider" Minimum="0" Maximum="100" Value="15" IsSnapToTickEnabled="True" TickFrequency="1"/>
-            <Button x:Name="BradleyButton" Margin="5" Content="Bradley" Click="BradleyButton_Click" Width="75"/>
+            <Button x:Name="BradleyButton" Margin="5" Click="BradleyButton_Click" Width="75">Bradley</Button>
             <Separator/>
+            <Label Content="Blur:" />
             <DockPanel>
                 <Label Content="Size" VerticalAlignment="Center"/>
                 <TextBox HorizontalAlignment="Right" Margin="5" VerticalAlignment="Center" Text="{Binding Value, ElementName=BlurSizeSlider, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
-            </DockPanel>  
+            </DockPanel>
             <Slider x:Name="BlurSizeSlider" Minimum="0" Maximum="100" Value="11" IsSnapToTickEnabled="True" TickFrequency="1"/>
             <DockPanel>
                 <Label Content="Sigma" VerticalAlignment="Center"/>
                 <TextBox HorizontalAlignment="Right" Margin="5" VerticalAlignment="Center" Text="{Binding Value, ElementName=SigmaSlider, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
             </DockPanel>
-            <Slider x:Name="SigmaSlider" Minimum="0" Maximum="100" Value="4" IsSnapToTickEnabled="True" TickFrequency="1"/>
+            <Slider x:Name="SigmaSlider" Minimum="0.5" Maximum="5" Value="1.4" IsSnapToTickEnabled="True" TickFrequency="0.1"/>
             <DockPanel HorizontalAlignment="Center">
-                <Button x:Name="BlurButton" Margin="5" Content="Blur" Click="BlurButton_Click" Width="75"/>
-                <Button x:Name="GaussBlurButton" Margin="5" Content="GaussianBlur" Click="GaussBlurButton_Click" Width="75"/>
+                <Button x:Name="BlurButton" Margin="5" Click="BlurButton_Click" Width="75">Blur</Button>
+                <Button x:Name="GaussBlurButton" Margin="5" Click="GaussBlurButton_Click" Width="85">Gaussian Blur</Button>
+            </DockPanel>
+            <Separator/>
+            <Label Content="Custom Kernel"/>
+            <Label x:Name="IsLoadedLabel" Visibility="Collapsed"/>
+            <DockPanel HorizontalAlignment="Center">
+                <Button Margin="5" x:Name="KernelCreatorButton" Click="KernelCreator_Click" Width="75">Kernel</Button>
+                <Button Margin="5" x:Name="ApplyKernelButton" Click="ApplyKernel_Click" IsEnabled="False" Width="75">Apply</Button>
             </DockPanel>
             <DockPanel>
-                <Button x:Name="ClearButton" Margin="5" Content="Clear" Width="65" Click="ClearButton_Click"/>
-                <Button x:Name="SaveButton" HorizontalAlignment="Right" Margin="5" Content="Save" Width="65" Click="SaveButton_Click"/>
+                <Button x:Name="ClearButton" Margin="5" Width="65" Click="ClearButton_Click">Clear</Button>
+                <Button x:Name="SaveButton" HorizontalAlignment="Right" Margin="5"  Width="65" Click="SaveButton_Click">Save</Button>
             </DockPanel>
         </StackPanel>
     </Grid>

@@ -325,15 +325,22 @@ namespace ImageFilters.BlurFilters
             WriteableBitmap outputWbmp = new WriteableBitmap(image.PixelWidth, image.PixelHeight, image.DpiX, image.DpiY, image.Format, image.Palette);
 
             ProcessFilter(sourceWbmp, outputWbmp, new Int32Rect(0, 0,image.PixelWidth,image.PixelHeight));
-            return Thresholding.BradleyThresholding.ConvertWriteableBitmapToBitmapImage(outputWbmp);  //not a pretty way 
-            
+            return Helpers.ConvertWriteableBitmapToBitmapImage(outputWbmp);               
         }
-        public Blur(int sigma, int size)
+
+        public Blur(double sigma, int size)
         {
-            this.size = size;
-            Kernel kernel = new Kernel(size,sigma);
+            this.size = Math.Min(21,size);
+            Kernel kernel = new Kernel(this.size,sigma);
             this.kernel = kernel.IntKernel;
             this.divisor = kernel.Divisor;
+        }
+
+        public Blur(int[,] customKernel)
+        {
+            this.size = customKernel.GetLength(0);
+            this.kernel = customKernel;
+            this.divisor = Kernel.ComputeDivisor(customKernel);            
         }
         public Blur(int size)
         {

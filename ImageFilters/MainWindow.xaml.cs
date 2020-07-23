@@ -2,8 +2,11 @@
 using ImageFilters.Thresholding;
 using Microsoft.Win32;
 using System;
+using System.ComponentModel;
+using System.Diagnostics;
 using System.IO;
 using System.Windows;
+using System.Windows.Markup.Localizer;
 using System.Windows.Media.Imaging;
 
 namespace ImageFilters
@@ -18,8 +21,13 @@ namespace ImageFilters
             InitializeComponent();
             ControlsDisabling();
         }
+        private bool isImageLoaded = false;
         private BitmapImage originalImage;
         private BitmapImage processedImage;
+        private KernelWindow kernelWindow;
+
+        public bool IsImageLoaded { get => isImageLoaded; set => isImageLoaded = value; }
+
         private void BrowseButton_Click(object sender, RoutedEventArgs e)
         {
             OpenFileDialog dlg = new OpenFileDialog();
@@ -37,26 +45,14 @@ namespace ImageFilters
                 originalImage.CreateOptions = BitmapCreateOptions.PreservePixelFormat | BitmapCreateOptions.IgnoreImageCache;
                 originalImage.EndInit();
 
-
+                processedImage = originalImage.Clone();
                 ImageViewer.Source = originalImage;
+                IsImageLoaded = true;
                 ControlsEnabling();
             }
         }
 
-        private void GetRealOrientation(BitmapImage image)
-        {
-            using (FileStream fileStream = new FileStream(image.UriSource.ToString(), FileMode.Open, FileAccess.Read))
-            {
-                BitmapFrame bitmapFrame = BitmapFrame.Create(fileStream, BitmapCreateOptions.DelayCreation, BitmapCacheOption.None);
-                BitmapMetadata bitmapMetadata = bitmapFrame.Metadata as BitmapMetadata;
 
-                if ((bitmapMetadata != null) && (bitmapMetadata.ContainsQuery("System.Photo.Orientation")))
-                {
-                    object o = bitmapMetadata.GetQuery("System.Photo.Orientation");
-                    //TODO: make orientation 
-                }
-            }
-        }
         private void BradleyButton_Click(object sender, RoutedEventArgs e)
         {
             BradleyThresholding filter = new BradleyThresholding(ThresholdSlider.Value, SizeSlider.Value);
@@ -75,15 +71,37 @@ namespace ImageFilters
             {
                 using (FileStream stream = new FileStream(saveDialog.FileName, FileMode.Create))
                 {
-                    PngBitmapEncoder encoder = new PngBitmapEncoder();
-                    encoder.Frames.Add(BitmapFrame.Create(processedImage));
-                    encoder.Save(stream);
+                    switch (saveDialog.FilterIndex)
+                    {
+                        case 1:
+                            PngBitmapEncoder pngEncoder = new PngBitmapEncoder();
+                            pngEncoder.Frames.Add(BitmapFrame.Create(processedImage));
+                            pngEncoder.Save(stream);
+                            break;
+                        case 2:
+                            JpegBitmapEncoder jpegEncoder = new JpegBitmapEncoder();
+                            jpegEncoder.Frames.Add(BitmapFrame.Create(processedImage));
+                            jpegEncoder.Save(stream);
+                            break;
+                        case 3:
+                            BmpBitmapEncoder bitmapEncoder = new BmpBitmapEncoder();
+                            bitmapEncoder.Frames.Add(BitmapFrame.Create(processedImage));
+                            bitmapEncoder.Save(stream);
+                            break;
+                        case 4:
+                            TiffBitmapEncoder tiffEncoder = new TiffBitmapEncoder();
+                            tiffEncoder.Frames.Add(BitmapFrame.Create(processedImage));
+                            tiffEncoder.Save(stream);
+                            break;
+                        default:
+                            break;
+                    }
                 }
-            }  
+            }
         }
 
         private void ClearButton_Click(object sender, RoutedEventArgs e)
-        { 
+        {
             ImageViewer.Source = originalImage;
         }
 
@@ -97,17 +115,22 @@ namespace ImageFilters
 
         private void GaussBlurButton_Click(object sender, RoutedEventArgs e)
         {
-            Blur gaussianBlurFilter = new Blur((int)SigmaSlider.Value,(int)BlurSizeSlider.Value);
+            Blur gaussianBlurFilter = new Blur(SigmaSlider.Value, (int)BlurSizeSlider.Value);
 
-            gaussianBlurFilter.Apply(originalImage);
+            processedImage = gaussianBlurFilter.Apply(originalImage);
+            ImageViewer.Source = processedImage;
         }
 
-        private void ControlsEnabling()
+        public void ControlsEnabling()
         {
-            BradleyButton.IsEnabled = true;
-            SaveButton.IsEnabled = true;
-            GaussBlurButton.IsEnabled = true;
-            BlurButton.IsEnabled = true;
+            if (IsImageLoaded)
+            {
+                BradleyButton.IsEnabled = true;
+                SaveButton.IsEnabled = true;
+                GaussBlurButton.IsEnabled = true;
+                BlurButton.IsEnabled = true;
+                if (IsLoadedLabel.Visibility == Visibility.Visible) ApplyKernelButton.IsEnabled = true;
+            }
         }
         private void ControlsDisabling()
         {
@@ -115,6 +138,19 @@ namespace ImageFilters
             SaveButton.IsEnabled = false;
             GaussBlurButton.IsEnabled = false;
             BlurButton.IsEnabled = false;
+        }
+
+        private void KernelCreator_Click(object sender, RoutedEventArgs e)
+        {
+            kernelWindow = new KernelWindow((int)BlurSizeSlider.Value, SigmaSlider.Value);
+            kernelWindow.Show();
+        }
+
+        private void ApplyKernel_Click(object sender, RoutedEventArgs e)
+        {
+            Blur customKernelFilter = new Blur(kernelWindow.CKernel);
+            processedImage = customKernelFilter.Apply(originalImage);
+            ImageViewer.Source = processedImage;
         }
     }
 }

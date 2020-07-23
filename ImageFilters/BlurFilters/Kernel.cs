@@ -1,7 +1,10 @@
-﻿using System;
+﻿using Microsoft.Win32;
+using System;
 using System.Collections.Generic;
 using System.Data.SqlClient;
+using System.IO;
 using System.Linq;
+using System.Net.NetworkInformation;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -20,7 +23,7 @@ namespace ImageFilters.BlurFilters
             get => size;
             set
             {
-                size = Math.Max(3, Math.Min(21, value | 1)); 
+                size = Math.Max(3, Math.Min(101, value | 1));
             }
         }
 
@@ -29,13 +32,17 @@ namespace ImageFilters.BlurFilters
             get => sigma;
             set
             {
-                sigma = Math.Max(0.5,Math.Min(5.0,value)); 
+                sigma = Math.Max(0.5, Math.Min(5.0, value));
+                sqrSigma = sigma * sigma;
             }
         }
 
         public int Divisor { get => divisor; }
         public int[,] IntKernel { get => intKernel; }
 
+       
+
+       
         private double GausianFunction(double x, double y)
         {
             return Math.Exp((x * x + y * y) / (-2 * sqrSigma)) / (2 * Math.PI * sqrSigma);
@@ -54,7 +61,7 @@ namespace ImageFilters.BlurFilters
             int r = size / 2;
             // kernel
             double[,] kernel = new double[size, size];
-            
+
             divisor = 1;
             // compute kernel
             for (int y = -r, i = 0; i < size; y++, i++)
@@ -84,7 +91,20 @@ namespace ImageFilters.BlurFilters
                 }
             }
         }
-
+        public static int ComputeDivisor(int[,] kernel)
+        {
+            int divisor = 1;
+            int size = kernel.GetLength(0);
+            for (int i = 0; i < size; i++)
+            {
+                for (int j = 0; j < size; j++)
+                {   
+                    // collect divisor
+                    divisor += kernel[i, j];
+                }
+            }
+            return divisor;
+        }
         private void CreateBlurKernel()
         {
             if (((size % 2) == 0) || (size < 3) || (size > 101))
@@ -103,9 +123,9 @@ namespace ImageFilters.BlurFilters
 
         }
 
-        public Kernel(int size, int sigma)
+        public Kernel(int size, double sigma)
         {
-            Size = size;
+            Size = Math.Min(21, size);
             Sigma = sigma;
             CreateGaussianKernel();
         }

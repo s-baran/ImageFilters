@@ -13,3 +13,5 @@ C:\Users\Rodzice\source\repos\rekrutacja\ImageFilters\ImageFilters\obj\Debug\Ima
 C:\Users\Rodzice\source\repos\rekrutacja\ImageFilters\ImageFilters\obj\Debug\ImageFilters.csproj.CoreCompileInputs.cache
 C:\Users\Rodzice\source\repos\rekrutacja\ImageFilters\ImageFilters\obj\Debug\ImageFilters.exe
 C:\Users\Rodzice\source\repos\rekrutacja\ImageFilters\ImageFilters\obj\Debug\ImageFilters.pdb
+C:\Users\Rodzice\source\repos\rekrutacja\ImageFilters\ImageFilters\obj\Debug\KernelWindow.g.cs
+C:\Users\Rodzice\source\repos\rekrutacja\ImageFilters\ImageFilters\obj\Debug\KernelWindow.baml
