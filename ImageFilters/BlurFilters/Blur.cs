@@ -113,58 +113,209 @@ namespace ImageFilters.BlurFilters
 
         private unsafe void Process64bppImage(ushort* baseSrc, ushort* baseDst, int srcStride, int dstStride, int startX, int startY, int stopX, int stopY)
         {
-            throw new NotImplementedException();
-        }
-
-        private unsafe void Process48bppImage(ushort* baseSrc, ushort* baseDst, int srcStride, int dstStride, int startX, int startY, int stopX, int stopY, int pixelSize)
-        {
-            throw new NotImplementedException();
-        }
-
-        private unsafe void Process32bppImage(byte* src, byte* dst, int srcStride, int dstStride, int srcOffset, int dstOffset, int startX, int startY, int stopX, int stopY)
-        {
-            // loop and array indexes
             int i, j, t, k, ir, jr;
-            // kernel's radius
             int radius = size >> 1;
-            // color sums
             long r, g, b, a, div;
 
-            // kernel size
             int kernelSize = size * size;
-            // number of kernel elements taken into account
             int processedKernelSize;
 
-            byte* p;
+            ushort* p;
 
-            // for each line
             for (int y = startY; y < stopY; y++)
             {
-                // for each pixel
+                ushort* src = baseSrc + y * srcStride;
+                ushort* dst = baseDst + y * dstStride;
+
                 for (int x = startX; x < stopX; x++, src += 4, dst += 4)
                 {
                     r = g = b = a = div = processedKernelSize = 0;
 
-                    // for each kernel row
                     for (i = 0; i < size; i++)
                     {
                         ir = i - radius;
                         t = y + ir;
 
-                        // skip row
                         if (t < startY)
                             continue;
-                        // break
                         if (t >= stopY)
                             break;
 
-                        // for each kernel column
                         for (j = 0; j < size; j++)
                         {
                             jr = j - radius;
                             t = x + jr;
 
-                            // skip column
+                            if (t < startX)
+                                continue;
+
+                            if (t < stopX)
+                            {
+                                k = kernel[i, j];
+                                p = &src[ir * srcStride + jr * 4];
+
+                                div += k;
+
+                                r += k * p[R];
+                                g += k * p[G];
+                                b += k * p[B];
+                                a += k * p[A];
+
+                                processedKernelSize++;
+                            }
+                        }
+                    }
+
+                    if (processedKernelSize == kernelSize)
+                    {
+                        div = divisor;
+                    }
+                    else
+                    {
+                        if (!dynamicDivisorForEdges)
+                        {
+                            div = divisor;
+                        }
+                    }
+
+                    if (div != 0)
+                    {
+                        r /= div;
+                        g /= div;
+                        b /= div;
+                        a /= div;
+                    }
+                    r += threshold;
+                    g += threshold;
+                    b += threshold;
+                    a += threshold;
+
+                    dst[R] = (ushort)((r > 65535) ? 65535 : ((r < 0) ? 0 : r));
+                    dst[G] = (ushort)((g > 65535) ? 65535 : ((g < 0) ? 0 : g));
+                    dst[B] = (ushort)((b > 65535) ? 65535 : ((b < 0) ? 0 : b));
+                    dst[A] = (ushort)((a > 65535) ? 65535 : ((a < 0) ? 0 : a));
+                }
+            }
+        }
+
+        private unsafe void Process48bppImage(ushort* baseSrc, ushort* baseDst, int srcStride, int dstStride, int startX, int startY, int stopX, int stopY, int pixelSize)
+        {
+            int i, j, t, k, ir, jr;
+            int radius = size >> 1;
+            long r, g, b, div;
+
+            int kernelSize = size * size;
+            int processedKernelSize;
+
+            ushort* p;
+
+            for (int y = startY; y < stopY; y++)
+            {
+                ushort* src = baseSrc + y * srcStride;
+                ushort* dst = baseDst + y * dstStride;
+
+                for (int x = startX; x < stopX; x++, src += pixelSize, dst += pixelSize)
+                {
+                    r = g = b = div = processedKernelSize = 0;
+
+                    for (i = 0; i < size; i++)
+                    {
+                        ir = i - radius;
+                        t = y + ir;
+
+                        if (t < startY)
+                            continue;
+                        if (t >= stopY)
+                            break;
+
+                        for (j = 0; j < size; j++)
+                        {
+                            jr = j - radius;
+                            t = x + jr;
+
+                            if (t < startX)
+                                continue;
+
+                            if (t < stopX)
+                            {
+                                k = kernel[i, j];
+                                p = &src[ir * srcStride + jr * pixelSize];
+
+                                div += k;
+
+                                r += k * p[R];
+                                g += k * p[G];
+                                b += k * p[B];
+
+                                processedKernelSize++;
+                            }
+                        }
+                    }
+
+                    if (processedKernelSize == kernelSize)
+                    {
+                        div = divisor;
+                    }
+                    else
+                    {
+                        if (!dynamicDivisorForEdges)
+                        {
+                            div = divisor;
+                        }
+                    }
+
+                    if (div != 0)
+                    {
+                        r /= div;
+                        g /= div;
+                        b /= div;
+                    }
+                    r += threshold;
+                    g += threshold;
+                    b += threshold;
+
+                    dst[R] = (ushort)((r > 65535) ? 65535 : ((r < 0) ? 0 : r));
+                    dst[G] = (ushort)((g > 65535) ? 65535 : ((g < 0) ? 0 : g));
+                    dst[B] = (ushort)((b > 65535) ? 65535 : ((b < 0) ? 0 : b));
+
+                    if (pixelSize == 4)
+                        dst[A] = src[A];
+                }
+            }
+        }
+
+        private unsafe void Process32bppImage(byte* src, byte* dst, int srcStride, int dstStride, int srcOffset, int dstOffset, int startX, int startY, int stopX, int stopY)
+        {
+            int i, j, t, k, ir, jr;
+            int radius = size >> 1;
+            long r, g, b, a, div;
+
+            int kernelSize = size * size;
+            int processedKernelSize;
+
+            byte* p;
+
+            for (int y = startY; y < stopY; y++)
+            {
+                for (int x = startX; x < stopX; x++, src += 4, dst += 4)
+                {
+                    r = g = b = a = div = processedKernelSize = 0;
+
+                    for (i = 0; i < size; i++)
+                    {
+                        ir = i - radius;
+                        t = y + ir;
+
+                        if (t < startY)
+                            continue;
+                        if (t >= stopY)
+                            break;
+
+                        for (j = 0; j < size; j++)
+                        {
+                            jr = j - radius;
+                            t = x + jr;
+
                             if (t < startX)
                                 continue;
 
@@ -185,23 +336,18 @@ namespace ImageFilters.BlurFilters
                         }
                     }
 
-                    // check if all kernel elements were processed
                     if (processedKernelSize == kernelSize)
                     {
-                        // all kernel elements are processed - we are not on the edge
                         div = divisor;
                     }
                     else
                     {
-                        // we are on edge. do we need to use dynamic divisor or not?
                         if (!dynamicDivisorForEdges)
                         {
-                            // do
                             div = divisor;
                         }
                     }
 
-                    // check divider
                     if (div != 0)
                     {
                         r /= div;
@@ -226,12 +372,158 @@ namespace ImageFilters.BlurFilters
 
         private unsafe void Process24bppImage(byte* src, byte* dst, int srcStride, int dstStride, int srcOffset, int dstOffset, int startX, int startY, int stopX, int stopY, int pixelSize)
         {
-            throw new NotImplementedException();
+            int i, j, t, k, ir, jr;
+            int radius = size >> 1;
+            long r, g, b, div;
+
+            int kernelSize = size * size;
+            int processedKernelSize;
+
+            byte* p;
+
+            for (int y = startY; y < stopY; y++)
+            {
+                for (int x = startX; x < stopX; x++, src += pixelSize, dst += pixelSize)
+                {
+                    r = g = b = div = processedKernelSize = 0;
+
+                    for (i = 0; i < size; i++)
+                    {
+                        ir = i - radius;
+                        t = y + ir;
+
+                        if (t < startY)
+                            continue;
+                        if (t >= stopY)
+                            break;
+
+                        for (j = 0; j < size; j++)
+                        {
+                            jr = j - radius;
+                            t = x + jr;
+
+                            if (t < startX)
+                                continue;
+
+                            if (t < stopX)
+                            {
+                                k = kernel[i, j];
+                                p = &src[ir * srcStride + jr * pixelSize];
+
+                                div += k;
+
+                                r += k * p[R];
+                                g += k * p[G];
+                                b += k * p[B];
+
+                                processedKernelSize++;
+                            }
+                        }
+                    }
+
+                    if (processedKernelSize == kernelSize)
+                    {
+                        div = divisor;
+                    }
+                    else
+                    {
+                        if (!dynamicDivisorForEdges)
+                        {
+                            div = divisor;
+                        }
+                    }
+
+                    if (div != 0)
+                    {
+                        r /= div;
+                        g /= div;
+                        b /= div;
+                    }
+                    r += threshold;
+                    g += threshold;
+                    b += threshold;
+
+                    dst[R] = (byte)((r > 255) ? 255 : ((r < 0) ? 0 : r));
+                    dst[G] = (byte)((g > 255) ? 255 : ((g < 0) ? 0 : g));
+                    dst[B] = (byte)((b > 255) ? 255 : ((b < 0) ? 0 : b));
+
+                    // take care of alpha channel
+                    if (pixelSize == 4)
+                        dst[A] = src[A];
+                }
+                src += srcOffset;
+                dst += dstOffset;
+            }
         }
 
         private unsafe void Process16bppImage(ushort* baseSrc, ushort* baseDst, int srcStride, int dstStride, int startX, int startY, int stopX, int stopY)
         {
-            throw new NotImplementedException();
+            int i, j, t, k, ir, jr;
+            int radius = size >> 1;
+            // color sums
+            long g, div;
+
+            int kernelSize = size * size;
+            int processedKernelSize;
+
+            for (int y = startY; y < stopY; y++)
+            {
+                ushort* src = baseSrc + y * srcStride;
+                ushort* dst = baseDst + y * dstStride;
+
+                for (int x = startX; x < stopX; x++, src++, dst++)
+                {
+                    g = div = processedKernelSize = 0;
+
+                    for (i = 0; i < size; i++)
+                    {
+                        ir = i - radius;
+                        t = y + ir;
+
+                        if (t < startY)
+                            continue;
+                        if (t >= stopY)
+                            break;
+
+                        for (j = 0; j < size; j++)
+                        {
+                            jr = j - radius;
+                            t = x + jr;
+
+                            if (t < startX)
+                                continue;
+
+                            if (t < stopX)
+                            {
+                                k = kernel[i, j];
+
+                                div += k;
+                                g += k * src[ir * srcStride + jr];
+                                processedKernelSize++;
+                            }
+                        }
+                    }
+
+                    if (processedKernelSize == kernelSize)
+                    {
+                        div = divisor;
+                    }
+                    else
+                    {
+                        if (!dynamicDivisorForEdges)
+                        {
+                            div = divisor;
+                        }
+                    }
+
+                    if (div != 0)
+                    {
+                        g /= div;
+                    }
+                    g += threshold;
+                    *dst = (ushort)((g > 65535) ? 65535 : ((g < 0) ? 0 : g));
+                }
+            }
         }
 
         private unsafe void Process8bppImage(byte* src, byte* dst, int srcStride, int dstStride, int srcOffset, int dstOffset, int startX, int startY, int stopX, int stopY)
