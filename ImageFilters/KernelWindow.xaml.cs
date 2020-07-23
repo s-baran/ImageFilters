@@ -106,5 +106,11 @@ namespace ImageFilters
             }
             
         }
+
+        protected override void OnClosed(EventArgs e)
+        {
+            ((MainWindow)Application.Current.MainWindow).IsLoadedLabel.Visibility = Visibility.Collapsed;
+            base.OnClosed(e);
+        }
     }
 }
